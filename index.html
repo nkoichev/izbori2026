@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Президентски избори 2026</title>
+<meta name="description" content="Интерактивни графики: президентски избори в България, 25.10.2026 — Гюров срещу Йотова по области, градове и общини, Стара Загора по секции.">
+<link rel="icon" href="icons/gentleman_bust.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #1b1f27; --muted: #667085; --line: #e4e7ec;
+    --gyu: #1E88E5; --iot: #E53935; --accent: #1b1f27;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Sofia Sans', system-ui, sans-serif; }
+  header { padding: 28px 16px 8px; max-width: 1200px; margin: 0 auto; }
+  h1 { margin: 0; font-size: clamp(26px, 4vw, 40px); font-weight: 800; letter-spacing: -0.5px; }
+  .sub { color: var(--muted); margin-top: 6px; font-size: 15px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 8px 16px 40px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-top: 18px; }
+  h2 { margin: 0 0 12px; font-size: 22px; font-weight: 800; }
+  .note { color: var(--muted); font-size: 14px; margin: 4px 0 10px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .kpi .l { color: var(--muted); font-size: 13px; }
+  .kpi .v { font-size: 26px; font-weight: 800; margin-top: 2px; }
+  .kpi .d { color: var(--muted); font-size: 13px; }
+  .kpi .bar { height: 4px; border-radius: 2px; margin-top: 8px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { border: 0; background: transparent; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; color: var(--ink); }
+  .seg button.on { background: var(--accent); color: #fff; }
+  select { font: inherit; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+  .score { display: flex; gap: 14px; flex-wrap: wrap; margin: 6px 0 4px; }
+  .score .s { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px 8px 8px; }
+  .score img { width: 64px; height: 64px; }
+  .score .n { font-size: 30px; font-weight: 800; line-height: 1; }
+  .score .t { color: var(--muted); font-size: 13px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .chip { border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 13px; cursor: pointer; background: var(--card); }
+  .chip.on { color: #fff; border-color: transparent; }
+  .grid2 { display: grid; grid-template-columns: 3fr 2fr; gap: 12px; }
+  @media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } .score img { width: 48px; height: 48px; } }
+  .tbl-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; margin-top: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th { position: sticky; top: 0; background: #fafbfc; cursor: pointer; user-select: none; font-weight: 600; }
+  td:nth-child(2), th:nth-child(2) { text-align: left; }
+  td img { width: 34px; height: 34px; vertical-align: middle; }
+  .pos { color: var(--gyu); font-weight: 600; } .neg { color: var(--iot); font-weight: 600; }
+  footer { max-width: 1200px; margin: 0 auto; padding: 0 16px 30px; color: var(--muted); font-size: 13px; }
+  footer a { color: inherit; }
+  .plot { width: 100%; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Президентски избори 2026 · <span id="round-label">I тур</span></h1>
+  <div class="sub" id="subtitle">Зареждане…</div>
+  <div class="kpis" id="kpis"></div>
+</header>
+
+<main>
+  <section id="vs">
+    <h2>Гюров срещу Йотова</h2>
+    <div class="controls">
+      <div class="seg" id="lvl">
+        <button data-l="regions" class="on">Области (МИР)</button>
+        <button data-l="cities">Градове</button>
+        <button data-l="municipalities">Общини</button>
+      </div>
+      <label id="minwrap" hidden>Минимум избиратели:
+        <select id="minv">
+          <option>5000</option><option>10000</option><option>20000</option>
+          <option selected>30000</option><option>50000</option><option>100000</option>
+        </select>
+      </label>
+    </div>
+    <div class="note" id="lvlnote"></div>
+    <div class="score">
+      <div class="s"><img src="icons/gentleman.png" alt="Води Гюров"><div><div class="n" id="ng">–</div><div class="t">води Гюров</div></div></div>
+      <div class="s"><img src="icons/bai_ganyo.png" alt="Води Йотова"><div><div class="n" id="ny">–</div><div class="t">води Йотова</div></div></div>
+    </div>
+    <div id="bgmap" class="plot"></div>
+    <div class="note" id="bgmapnote"></div>
+    <div id="div" class="plot"></div>
+    <div id="scatter" class="plot"></div>
+    <div class="tbl-wrap"><table id="vstbl"></table></div>
+  </section>
+
+  <section id="sz">
+    <h2>гр. Стара Загора по секции</h2>
+    <div class="note" id="sznote"></div>
+    <div class="chips" id="szchips"></div>
+    <div id="szmap" class="plot"></div>
+    <h2 style="margin-top:18px">Гюров срещу Йотова по секция</h2>
+    <div class="note">Цвят — кой води; размер — колко голяма е преднината.</div>
+    <div id="szlead" class="plot"></div>
+  </section>
+
+  <section id="res">
+    <h2>Резултати в страната</h2>
+    <div class="grid2">
+      <div id="natbar" class="plot"></div>
+      <div id="natpie" class="plot"></div>
+    </div>
+    <div id="szcmp" class="plot"></div>
+    <div id="turnout" class="plot"></div>
+  </section>
+</main>
+
+<footer>
+  Данни: <a href="https://results.cik.bg/pvr202610/" target="_blank" rel="noopener">results.cik.bg</a> (протоколи на СИК, 100% обработени).
+  Процентите са от действителните гласове, вкл. „Не подкрепям никого“ — както ги смята ЦИК.
+  Карта: © OpenStreetMap; граници на областите: geoBoundaries. Иконите са карикатури.
+</footer>
+
+<script>
+const CFG = { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['lasso2d', 'select2d'] };
+const GYU = '#1E88E5', IOT = '#E53935';
+const CAND_COLORS = { 'ЙОТОВА': IOT, 'ГЮРОВ': GYU, 'КОСТАДИНОВ': '#2E7D32', 'ВАСИЛЕВ': '#FB8C00', 'МИХАЙЛОВ': '#8E24AA', 'ХРИСТАНОВ': '#00ACC1' };
+const FALLBACK = ['#6D4C41', '#D81B60', '#546E7A', '#5E35B1', '#00695C', '#BF360C', '#283593', '#AD1457', '#558B2F', '#4E342E', '#78909C', '#EF6C00'];
+const ICON = { g: 'icons/gentleman_bust.png', y: 'icons/bai_ganyo_bust.png' };
+const fmt = n => n.toLocaleString('bg-BG').replace(/ /g, ' ');
+const pct = (a, b) => b ? a / b * 100 : 0;
+const isMobile = () => window.innerWidth < 700;
+
+let D, GEO, level = 'regions';
+
+function colorOf(label, i) {
+  const up = label.toUpperCase();
+  for (const k in CAND_COLORS) if (up.includes(k)) return CAND_COLORS[k];
+  return FALLBACK[i % FALLBACK.length];
+}
+
+// червено (Йотова) → бяло → синьо (Гюров)
+function divColor(t) {
+  const lerp = (a, b, u) => Math.round(a + (b - a) * u);
+  const R = [178, 24, 43], W = [247, 247, 247], B = [33, 102, 172];
+  const [c0, c1, u] = t < 0 ? [W, R, Math.min(1, -t)] : [W, B, Math.min(1, t)];
+  return `rgb(${lerp(c0[0], c1[0], u)},${lerp(c0[1], c1[1], u)},${lerp(c0[2], c1[2], u)})`;
+}
+
+function vsRows() {
+  const src = D[level];
+  const minV = level === 'regions' ? 0 : +document.getElementById('minv').value;
+  return src.filter(r => r.voters >= minV && r.valid > 0).map(r => {
+    const g = pct(r.g, r.valid), y = pct(r.y, r.valid);
+    return { ...r, gp: g, yp: y, d: g - y, lead: g > y ? 'g' : 'y' };
+  }).sort((a, b) => a.d - b.d);
+}
+
+function renderKpis() {
+  const N = D.national;
+  const order = N.v.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]).slice(0, 4);
+  let h = `<div class="kpi"><div class="l">Активност</div><div class="v">${pct(N.voted, N.voters).toFixed(2)}%</div>
+           <div class="d">${fmt(N.voted)} от ${fmt(N.voters)}</div></div>`;
+  order.forEach(([v, i]) => {
+    const c = D.candidates[i];
+    h += `<div class="kpi"><div class="l">${c.label}</div><div class="v">${pct(v, N.valid).toFixed(3)}%</div>
+          <div class="d">${fmt(v)} гласа</div><div class="bar" style="background:${colorOf(c.label, i)}"></div></div>`;
+  });
+  document.getElementById('kpis').innerHTML = h;
+}
+
+function renderVs() {
+  const rows = vsRows();
+  document.getElementById('minwrap').hidden = level === 'regions';
+  document.getElementById('lvlnote').textContent = {
+    regions: 'Целият избирателен район (областта, вкл. селата) — както на results.cik.bg.',
+    cities: 'Само самият град (населено място „гр.“), без селата около него.',
+    municipalities: 'Цялата община (градът + селата в нея).',
+  }[level];
+  document.getElementById('ng').textContent = rows.filter(r => r.lead === 'g').length;
+  document.getElementById('ny').textContent = rows.filter(r => r.lead === 'y').length;
+
+  renderBgMap();
+
+  // Преднина: Гюров % − Йотова %, икона в края на всеки стълб
+  const xs = rows.map(r => r.d), xmin = Math.min(0, ...xs), xmax = Math.max(0, ...xs);
+  const iw = Math.max(xmax - xmin, 10) * (isMobile() ? 0.12 : 0.08);
+  Plotly.react('div', [{
+    type: 'bar', orientation: 'h', y: rows.map(r => r.name), x: xs,
+    marker: { color: rows.map(r => r.lead === 'g' ? GYU : IOT) },
+    text: xs.map(d => (d > 0 ? '+' : '') + d.toFixed(1)), textposition: 'inside', insidetextanchor: 'middle',
+    textfont: { size: 12, color: '#fff' },
+    customdata: rows.map(r => [r.gp.toFixed(3), r.yp.toFixed(3), fmt(r.voters)]),
+    hovertemplate: '<b>%{y}</b><br>Гюров: %{customdata[0]}%<br>Йотова: %{customdata[1]}%<br>Избиратели: %{customdata[2]}<extra></extra>',
+  }], {
+    height: Math.max(380, 26 * rows.length + 40), margin: { l: 10, r: 10, t: 10, b: 30 },
+    xaxis: { range: [xmin - iw * 1.3, xmax + iw * 1.3], zeroline: true, zerolinecolor: '#999', title: 'пр.п.' },
+    yaxis: { automargin: true, categoryorder: 'array', categoryarray: rows.map(r => r.name), tickfont: { size: 12 } },
+    bargap: 0.25, showlegend: false, dragmode: false,
+    images: rows.map(r => ({
+      source: ICON[r.lead], xref: 'x', yref: 'y', x: r.d, y: r.name, sizex: iw, sizey: 0.95,
+      xanchor: r.d > 0 ? 'left' : 'right', yanchor: 'middle', sizing: 'contain', layer: 'above',
+    })),
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+  }, CFG);
+
+  // Разсейване
+  const lim = Math.max(...rows.map(r => Math.max(r.gp, r.yp))) + 3;
+  const maxV = Math.max(...rows.map(r => r.voters));
+  const tr = k => ({
+    type: 'scatter', mode: 'markers', name: k === 'g' ? 'води Гюров' : 'води Йотова',
+    x: rows.filter(r => r.lead === k).map(r => r.yp), y: rows.filter(r => r.lead === k).map(r => r.gp),
+    text: rows.filter(r => r.lead === k).map(r => r.name),
+    marker: { color: k === 'g' ? GYU : IOT, opacity: 0.7, size: rows.filter(r => r.lead === k).map(r => 8 + 42 * Math.sqrt(r.voters / maxV)), line: { width: 0 } },
+    customdata: rows.filter(r => r.lead === k).map(r => fmt(r.voters)),
+    hovertemplate: '<b>%{text}</b><br>Йотова: %{x:.3f}%<br>Гюров: %{y:.3f}%<br>Избиратели: %{customdata}<extra></extra>',
+  });
+  Plotly.react('scatter', [tr('y'), tr('g')], {
+    height: 480, margin: { l: 50, r: 10, t: 40, b: 50 },
+    title: { text: 'Над диагонала води Гюров (размер = избиратели)', font: { size: 15 } },
+    xaxis: { title: 'Йотова %', range: [0, lim] }, yaxis: { title: 'Гюров %', range: [0, lim] },
+    shapes: [{ type: 'line', x0: 0, y0: 0, x1: lim, y1: lim, line: { dash: 'dot', color: '#999', width: 1 } }],
+    legend: { orientation: 'h', y: -0.15 },
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+  }, CFG);
+
+  renderVsTable(rows.slice().reverse());
+}
+
+let sortKey = 'd', sortDir = -1;
+function renderVsTable(rows) {
+  const cols = [['', null], ['Име', 'name'], ['Гюров', 'g'], ['Гюров %', 'gp'], ['Йотова', 'y'], ['Йотова %', 'yp'],
+                ['Разлика', 'd'], ['Избиратели', 'voters'], ['Активност %', 'turn']];
+  rows.forEach(r => r.turn = pct(r.voted, r.voters));
+  rows.sort((a, b) => (typeof a[sortKey] === 'string' ? a[sortKey].localeCompare(b[sortKey], 'bg') : a[sortKey] - b[sortKey]) * sortDir);
+  let h = '<thead><tr>' + cols.map(([t, k]) => `<th data-k="${k || ''}">${t}${k === sortKey ? (sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('') + '</tr></thead><tbody>';
+  for (const r of rows) {
+    h += `<tr><td><img src="${ICON[r.lead]}" alt=""></td><td>${r.name}</td><td>${fmt(r.g)}</td><td>${r.gp.toFixed(3)}</td>
+          <td>${fmt(r.y)}</td><td>${r.yp.toFixed(3)}</td><td class="${r.d > 0 ? 'pos' : 'neg'}">${(r.d > 0 ? '+' : '') + r.d.toFixed(3)}</td>
+          <td>${fmt(r.voters)}</td><td>${r.turn.toFixed(2)}</td></tr>`;
+  }
+  const t = document.getElementById('vstbl');
+  t.innerHTML = h + '</tbody>';
+  t.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
+    const k = th.dataset.k; if (!k) return;
+    sortDir = k === sortKey ? -sortDir : -1; sortKey = k; renderVsTable(rows);
+  });
+}
+
+function renderBgMap() {
+  const el = document.getElementById('bgmap'), note = document.getElementById('bgmapnote');
+  if (level !== 'regions') { Plotly.purge(el); el.style.display = 'none'; note.textContent = ''; return; }
+  el.style.display = '';
+  // МИР → области: Пловдив град+област, София 23/24/25 → София град
+  const MAP = { 'Пловдив Град': 'Пловдив', 'Пловдив Област': 'Пловдив', 'София 23 МИР': 'София град',
+                'София 24 МИР': 'София град', 'София 25 МИР': 'София град', 'София Област': 'София област' };
+  const ob = {};
+  D.regions.filter(r => r.id !== '32').forEach(r => {
+    const k = MAP[r.name] || r.name, o = ob[k] || (ob[k] = { g: 0, y: 0, valid: 0 });
+    o.g += r.g; o.y += r.y; o.valid += r.valid;
+  });
+  const KX = Math.cos(42.7 * Math.PI / 180);
+  const SHIFT = { 'София град': [-0.05, -0.05], 'София област': [0.32, 0.12] };
+  const dmax = Math.max(...Object.values(ob).map(o => Math.abs(pct(o.g - o.y, o.valid))), 1);
+  const traces = [], images = [], lx = [], ly = [], lt = [], lc = [];
+  const isz = isMobile() ? 0.30 : 0.24;
+  for (const f of GEO.features) {
+    const nm = f.properties.name_bg, o = ob[nm]; if (!o) continue;
+    const ring = f.geometry.coordinates[0], gp = pct(o.g, o.valid), yp = pct(o.y, o.valid), d = gp - yp;
+    traces.push({
+      type: 'scatter', mode: 'lines', fill: 'toself', fillcolor: divColor(d / dmax), hoveron: 'fills',
+      x: ring.map(p => p[0] * KX), y: ring.map(p => p[1]), line: { color: '#fff', width: 1 },
+      name: nm, showlegend: false, hoverinfo: 'text',
+      text: `<b>${nm}</b><br>Гюров: ${gp.toFixed(3)}% (${fmt(o.g)})<br>Йотова: ${yp.toFixed(3)}% (${fmt(o.y)})<br>Разлика: ${d > 0 ? '+' : ''}${d.toFixed(3)} пр.п.`,
+    });
+    // центроид (формула на Гаус)
+    let A = 0, cx = 0, cy = 0;
+    for (let i = 0; i < ring.length - 1; i++) {
+      const [x0, y0] = ring[i], [x1, y1] = ring[i + 1], c = x0 * y1 - x1 * y0;
+      A += c; cx += (x0 + x1) * c; cy += (y0 + y1) * c;
+    }
+    cx /= 3 * A; cy /= 3 * A;
+    const [dx, dy] = SHIFT[nm] || [0, 0];
+    const X = cx * KX + dx, Y = cy + dy;
+    images.push({ source: ICON[d > 0 ? 'g' : 'y'], xref: 'x', yref: 'y', x: X, y: Y + 0.02, sizex: isz, sizey: isz,
+                  xanchor: 'center', yanchor: 'bottom', sizing: 'contain', layer: 'above' });
+    lx.push(X); ly.push(Y); lt.push(`<b>${nm}</b><br>${d > 0 ? '+' : ''}${d.toFixed(1)}`);
+    lc.push(Math.abs(d) / dmax > 0.7 ? '#fff' : '#111');
+  }
+  traces.push({ type: 'scatter', mode: 'text', x: lx, y: ly, text: lt, textposition: 'bottom center',
+                textfont: { size: isMobile() ? 8 : 10, color: lc }, hoverinfo: 'skip', showlegend: false });
+  Plotly.react(el, traces, {
+    height: isMobile() ? 380 : 620, margin: { l: 0, r: 0, t: 0, b: 0 },
+    xaxis: { visible: false }, yaxis: { visible: false, scaleanchor: 'x', scaleratio: 1 },
+    images, dragmode: false, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', hovermode: 'closest',
+  }, { ...CFG, scrollZoom: false });
+  note.textContent = 'Синьо — води Гюров, червено — води Йотова; по-наситено = по-голяма преднина. Пловдив град+област и София 23/24/25 МИР са обединени до области.';
+}
+
+// ── Стара Загора по секции ──
+let szSel = null;
+function renderSz() {
+  const S = D.sz_sections, C = D.candidates;
+  const tot = C.map((c, i) => S.reduce((s, r) => s + r.v[i], 0));
+  const order = tot.map((v, i) => [v, i]).filter(x => x[0] > 0).sort((a, b) => b[0] - a[0]).map(x => x[1]);
+  if (!szSel) szSel = new Set(order.slice(0, 4));
+  document.getElementById('sznote').textContent =
+    `${S.length} секции · ${fmt(S.reduce((s, r) => s + r.valid, 0))} действителни гласа. Избери кандидати:`;
+  document.getElementById('szchips').innerHTML = order.map(i => {
+    const on = szSel.has(i), col = colorOf(C[i].label, i);
+    return `<span class="chip ${on ? 'on' : ''}" data-i="${i}" style="${on ? 'background:' + col : ''}">${C[i].label} · ${fmt(tot[i])}</span>`;
+  }).join('');
+  document.querySelectorAll('#szchips .chip').forEach(ch => ch.onclick = () => {
+    const i = +ch.dataset.i; szSel.has(i) ? szSel.delete(i) : szSel.add(i); renderSz();
+  });
+
+  // Обединяване на секции на едно място
+  const loc = {};
+  S.forEach(r => {
+    const k = r.lat + ',' + r.lon, o = loc[k] || (loc[k] = { lat: r.lat, lon: r.lon, addr: r.addr, sik: [], valid: 0, v: C.map(() => 0) });
+    o.sik.push(r.sik); o.valid += r.valid; r.v.forEach((x, i) => o.v[i] += x);
+  });
+  const L = Object.values(loc);
+  const gmax = Math.max(...L.map(o => Math.max(...order.map(i => o.v[i]))));
+  const SMAX = isMobile() ? 20 : 28, sizeref = 2 * gmax / (SMAX * SMAX);
+  const traces = [...szSel].sort((a, b) => tot[b] - tot[a]).map(i => {
+    const pts = L.filter(o => o.v[i] > 0).sort((a, b) => b.v[i] - a.v[i]);
+    return {
+      type: 'scattermap', mode: 'markers', name: C[i].label, lat: pts.map(o => o.lat), lon: pts.map(o => o.lon),
+      marker: { size: pts.map(o => o.v[i]), sizemode: 'area', sizeref, color: colorOf(C[i].label, i), opacity: 0.72 },
+      text: pts.map(o => `<b>${o.addr}</b><br>Секции: ${o.sik.join(' · ')}<br>${C[i].label}: ${fmt(o.v[i])} (${pct(o.v[i], o.valid).toFixed(1)}%)`),
+      hoverinfo: 'text',
+    };
+  });
+  const mapLayout = h => ({
+    height: h, margin: { l: 0, r: 0, t: 0, b: 0 },
+    map: { style: 'open-street-map', center: { lat: 42.424, lon: 25.627 }, zoom: isMobile() ? 11.6 : 12.6 },
+    legend: { orientation: 'h', y: 0, x: 0, bgcolor: 'rgba(255,255,255,0.85)' },
+  });
+  Plotly.react('szmap', traces, mapLayout(isMobile() ? 480 : 650), CFG);
+
+  // Водещ между Гюров и Йотова по секция
+  const gi = D.gyu, yi = D.iot;
+  const lead = k => {
+    const pts = S.filter(r => (k === 'g') === (r.v[gi] > r.v[yi]));
+    return {
+      type: 'scattermap', mode: 'markers', name: k === 'g' ? 'води Гюров' : 'води Йотова',
+      lat: pts.map(r => r.lat), lon: pts.map(r => r.lon),
+      marker: { color: k === 'g' ? GYU : IOT, opacity: 0.85,
+                size: pts.map(r => 7 + Math.abs(pct(r.v[gi] - r.v[yi], r.valid)) * (isMobile() ? 0.4 : 0.6)) },
+      text: pts.map(r => `<b>${r.addr}</b><br>Секция ${r.sik}<br>Гюров: ${pct(r.v[gi], r.valid).toFixed(1)}%<br>Йотова: ${pct(r.v[yi], r.valid).toFixed(1)}%`),
+      hoverinfo: 'text',
+    };
+  };
+  Plotly.react('szlead', [lead('y'), lead('g')], mapLayout(isMobile() ? 520 : 850), CFG);
+}
+
+// ── Резултати ──
+function renderRes() {
+  const N = D.national, C = D.candidates;
+  const order = N.v.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]);
+  const top = order.slice(0, 12).reverse();
+  Plotly.react('natbar', [{
+    type: 'bar', orientation: 'h', x: top.map(x => x[0]), y: top.map(x => C[x[1]].label),
+    marker: { color: top.map(x => colorOf(C[x[1]].label, x[1])) },
+    text: top.map(x => pct(x[0], N.valid).toFixed(2) + '%'), textposition: 'outside', cliponaxis: false,
+    hovertemplate: '%{y}: %{x:,} гласа<extra></extra>',
+  }], { height: 460, margin: { l: 10, r: 60, t: 40, b: 30 }, title: { text: 'Гласове по кандидатска двойка (топ 12)', font: { size: 15 } },
+        yaxis: { automargin: true }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', separators: ', ' }, CFG);
+
+  const t6 = order.slice(0, 6);
+  const other = order.slice(6).reduce((s, x) => s + x[0], 0);
+  Plotly.react('natpie', [{
+    type: 'pie', hole: 0.45, sort: false,
+    labels: [...t6.map(x => C[x[1]].label), 'Други', 'Не подкрепям никого'],
+    values: [...t6.map(x => x[0]), other, N.none],
+    marker: { colors: [...t6.map(x => colorOf(C[x[1]].label, x[1])), '#BDBDBD', '#757575'] },
+    textinfo: 'percent', hovertemplate: '%{label}: %{value:,} (%{percent})<extra></extra>',
+  }], { height: 460, margin: { l: 10, r: 10, t: 40, b: 10 }, title: { text: 'Дял на гласовете', font: { size: 15 } },
+        showlegend: true, legend: { orientation: 'h', y: -0.05, font: { size: 11 } }, paper_bgcolor: 'rgba(0,0,0,0)', separators: ', ' }, CFG);
+
+  const S = D.sz_sections, szValid = S.reduce((s, r) => s + r.valid, 0);
+  const t8 = order.slice(0, 8);
+  const lbl = t8.map(x => C[x[1]].label);
+  Plotly.react('szcmp', [
+    { type: 'bar', name: 'гр. Стара Загора', x: lbl, y: t8.map(x => pct(S.reduce((s, r) => s + r.v[x[1]], 0), szValid)), marker: { color: GYU } },
+    { type: 'bar', name: 'Страна', x: lbl, y: t8.map(x => pct(x[0], N.valid)), marker: { color: '#9E9E9E' } },
+  ].map(t => ({ ...t, text: t.y.map(v => v.toFixed(1)), textposition: 'outside', hovertemplate: '%{x}: %{y:.3f}%<extra></extra>' })), {
+    barmode: 'group', height: 440, margin: { l: 40, r: 10, t: 40, b: 10 }, yaxis: { title: '%' }, xaxis: { automargin: true },
+    title: { text: 'гр. Стара Загора срещу цялата страна', font: { size: 15 } }, legend: { orientation: 'h', y: 1.08, x: 1, xanchor: 'right' },
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+  }, CFG);
+
+  const R = D.regions.map(r => ({ n: r.name, t: pct(r.voted, r.voters) })).sort((a, b) => b.t - a.t);
+  const natT = pct(N.voted, N.voters);
+  Plotly.react('turnout', [{
+    type: 'bar', x: R.map(r => r.n), y: R.map(r => r.t), marker: { color: '#5C6BC0' },
+    text: R.map(r => r.t.toFixed(1)), textposition: 'outside', hovertemplate: '%{x}: %{y:.2f}%<extra></extra>',
+  }], {
+    height: 420, margin: { l: 40, r: 10, t: 40, b: 10 }, title: { text: 'Активност по МИР, %', font: { size: 15 } },
+    xaxis: { tickangle: -45, automargin: true },
+    shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, y0: natT, y1: natT, line: { dash: 'dot', color: '#888' } }],
+    annotations: [{ xref: 'paper', x: 1, y: natT, text: `страна ${natT.toFixed(1)}%`, showarrow: false, yanchor: 'bottom', xanchor: 'right' }],
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+  }, CFG);
+}
+
+document.querySelectorAll('#lvl button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#lvl button').forEach(x => x.classList.toggle('on', x === b));
+  level = b.dataset.l; renderVs();
+});
+document.getElementById('minv').onchange = renderVs;
+
+Promise.all([fetch('data/round1.json').then(r => r.json()), fetch('geo/bg_oblasti.geojson').then(r => r.json())])
+  .then(([d, g]) => {
+    D = d; GEO = g;
+    document.getElementById('subtitle').textContent =
+      `${d.date || ''} · ${fmt(d.national.sections)} секции · данни от протоколите на СИК (results.cik.bg)`;
+    renderKpis(); renderVs(); renderSz(); renderRes();
+  })
+  .catch(e => { document.getElementById('subtitle').textContent = 'Грешка при зареждане на данните: ' + e; });
+</script>
+</body>
+</html>
