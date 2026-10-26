@@ -61,6 +61,9 @@ cities['name'] = cities['settlement'].str.replace('гр.', 'гр. ', regex=False
 
 muni = mun[mun['region_id'] != '32'].copy()
 muni['name'] = 'общ. ' + muni['municipality'] + ' (' + muni['region'] + ')'
+# Столична община е разделена от ЦИК между МИР 23/24/25 → един ред
+muni.loc[muni['region_id'].isin(['23', '24', '25']), ['name', 'region']] = ['Столична община', 'София град']
+muni = muni.groupby(['name', 'region'], as_index=False)[['voters', 'voted', 'valid_total', c_gyu, c_iot]].sum()
 
 # Секции в гр. Стара Загора + координати (същите номера на секции като в парламентарните избори)
 coords = {}
